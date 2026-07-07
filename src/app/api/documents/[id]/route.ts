@@ -60,12 +60,13 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       role: userRole,
       createdAt: document.createdAt,
       updatedAt: document.updatedAt,
-      permissions: document.permissions.map((p:any) => ({
-        userId: p.userId,
-        email: p.user.email,
-        name: p.user.name,
-        role: p.role,
-      })),
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+permissions: document.permissions.map((p: any) => ({
+  userId: p.userId,
+  email: p.user.email,
+  name: p.user.name,
+  role: p.role,
+})),    
     });
   } catch (error) {
     console.error(`GET /api/documents/${id} error:`, error);
