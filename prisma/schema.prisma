@@ -1,0 +1,156 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  OWNER
+  EDITOR
+  VIEWER
+}
+
+enum OperationType {
+  INSERT
+  DELETE
+  UPDATE_TITLE
+}
+
+model User {
+  id            String               @id @default(cuid())
+  name          String?
+  email         String?              @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?              // Nullable since OAuth users don't need a password
+  accounts      Account[]
+  sessions      Session[]
+  permissions   DocumentPermission[]
+  operations    Operation[]
+  snapshots     Snapshot[]
+  auditLogs     AuditLog[]
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+
+  @@index([email])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Document {
+  id          String               @id @default(cuid())
+  title       String
+  content     String               @db.Text // Contains latest serialized document state
+  ownerId     String
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+  permissions DocumentPermission[]
+  operations  Operation[]
+  snapshots   Snapshot[]
+
+  @@index([ownerId])
+}
+
+model DocumentPermission {
+  id         String   @id @default(cuid())
+  documentId String
+  userId     String
+  role       Role
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, userId])
+  @@index([userId])
+  @@index([documentId])
+}
+
+model Operation {
+  id         String        @id // Client-generated unique string: "clientId:sequence"
+  documentId String
+  userId     String
+  type       OperationType
+  position   String        // Fractional indexing position coordinate
+  value      String        @db.Text // Content character or title text
+  sequence   BigInt        @unique @default(autoincrement()) // Global auto-increment sync cursor
+  createdAt  DateTime      @default(now())
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([documentId, sequence])
+  @@index([documentId, position])
+  @@index([userId])
+}
+
+model Snapshot {
+  id            String   @id @default(cuid())
+  documentId    String
+  userId        String   // User who triggered/created the snapshot
+  content       String   @db.Text // Complete document JSON at snapshot point
+  sequence      BigInt   // The Operation sequence up to which this snapshot aggregates
+  versionNumber Int
+  isManual      Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([documentId, versionNumber])
+  @@index([documentId, createdAt])
+  @@index([userId])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?  // Nullable if user is deleted, keeping audit logs intact
+  action    String   // e.g., "CREATE_DOCUMENT", "DELETE_DOCUMENT", "CHANGE_PERMISSION"
+  details   String   @db.Text // JSON string containing context metadata
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([createdAt])
+}
