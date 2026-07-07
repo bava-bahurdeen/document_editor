@@ -60,7 +60,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       role: userRole,
       createdAt: document.createdAt,
       updatedAt: document.updatedAt,
-      permissions: document.permissions.map((p) => ({
+      permissions: document.permissions.map((p:any) => ({
         userId: p.userId,
         email: p.user.email,
         name: p.user.name,
