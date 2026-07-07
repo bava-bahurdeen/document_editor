@@ -1,6 +1,6 @@
 import "server-only";
 import { prisma } from "@/lib/db";
-import { Role } from "@prisma/client";
+type Role = "OWNER" | "EDITOR" | "VIEWER" | string;
 
 export type DocumentAction =
   | "READ"
@@ -54,7 +54,7 @@ export async function getPermissionRole(documentId: string, userId: string): Pro
     });
 
     if (document && document.ownerId === userId) {
-      return Role.OWNER;
+      return "OWNER";
     }
 
     return null;

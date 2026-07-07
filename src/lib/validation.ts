@@ -1,5 +1,6 @@
 import { z } from "zod";
-import { Role, OperationType } from "@prisma/client";
+import {  OperationType } from "@prisma/client";
+type Role = "OWNER" | "EDITOR" | "VIEWER";
 
 // Document validation
 export const createDocumentSchema = z.object({
@@ -15,7 +16,7 @@ export const updateDocumentSchema = z.object({
 // Permissions/Sharing validation
 export const shareDocumentSchema = z.object({
   email: z.string().email("Invalid email address"),
-  role: z.nativeEnum(Role),
+  role: z.string(),
 });
 
 export const removePermissionSchema = z.object({

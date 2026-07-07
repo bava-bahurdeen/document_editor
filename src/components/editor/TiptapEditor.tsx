@@ -13,7 +13,6 @@ import {
   queueOperationForSync,
   getDocumentOperations,
 } from "@/lib/db-client";
-import { resolveDocumentState } from "@/lib/crdt/resolver";
 import { syncEngine } from "@/lib/sync-engine";
 import { Operation, UserRole } from "@/types";
 import { Cloud, CloudOff, CloudLightning, RefreshCw, Undo, Redo, Shield } from "lucide-react";
