@@ -7,12 +7,10 @@ import TiptapEditor from "@/components/editor/TiptapEditor";
 import WorkspaceSidebar from "@/components/editor/WorkspaceSidebar";
 import ErrorBoundary from "@/components/ui/ErrorBoundary";
 import { ChevronLeft } from "lucide-react";
-import { Role } from "@prisma/client";
-
 interface PageProps {
   params: Promise<{ id: string }>;
 }
-
+type Role = "OWNER" | "EDITOR" | "VIEWER";
 export const metadata = {
   title: "Editor | Collaborative Workspace",
   description: "Collaborative, offline-first rich text document workspace.",

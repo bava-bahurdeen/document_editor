@@ -9,7 +9,10 @@ import { updateDocumentSchema } from "@/lib/validation";
  * GET /api/documents/[id]
  * Retrieves the document metadata and content, requiring READ permission.
  */
-export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
   const { id } = await params;
   const ip = req.headers.get("x-forwarded-for") || "127.0.0.1";
   const rateLimit = rateLimitCheck(ip);
@@ -25,7 +28,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   try {
     const isAuthorized = await checkPermission(id, session.user.id, "READ");
     if (!isAuthorized) {
-      return NextResponse.json({ error: "Forbidden: Access denied" }, { status: 403 });
+      return NextResponse.json(
+        { error: "Forbidden: Access denied" },
+        { status: 403 },
+      );
     }
 
     const document = await prisma.document.findUnique({
@@ -47,7 +53,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     });
 
     if (!document) {
-      return NextResponse.json({ error: "Document not found" }, { status: 404 });
+      return NextResponse.json(
+        { error: "Document not found" },
+        { status: 404 },
+      );
     }
 
     const userRole = await getPermissionRole(id, session.user.id);
@@ -60,17 +69,20 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       role: userRole,
       createdAt: document.createdAt,
       updatedAt: document.updatedAt,
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-permissions: document?.permissions?.map((p: any) => ({
-  userId: p?.userId,
-  email: p?.user?.email,
-  name: p?.user?.name,
-  role: p?.role,
-})),    
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      permissions: document?.permissions?.map((p: any) => ({
+        userId: p?.userId,
+        email: p?.user?.email,
+        name: p?.user?.name,
+        role: p?.role,
+      })),
     });
   } catch (error) {
     console.error(`GET /api/documents/${id} error:`, error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 },
+    );
   }
 }
 
@@ -78,7 +90,10 @@ permissions: document?.permissions?.map((p: any) => ({
  * PATCH /api/documents/[id]
  * Updates document details (title, content), requiring EDIT permission.
  */
-export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
   const { id } = await params;
   const ip = req.headers.get("x-forwarded-for") || "127.0.0.1";
   const rateLimit = rateLimitCheck(ip);
@@ -94,13 +109,19 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   try {
     const isAuthorized = await checkPermission(id, session.user.id, "EDIT");
     if (!isAuthorized) {
-      return NextResponse.json({ error: "Forbidden: Edit permission required" }, { status: 403 });
+      return NextResponse.json(
+        { error: "Forbidden: Edit permission required" },
+        { status: 403 },
+      );
     }
 
     const body = await req.json();
     const result = updateDocumentSchema.safeParse(body);
     if (!result.success) {
-      return NextResponse.json({ error: "Invalid payload", details: result.error.format() }, { status: 400 });
+      return NextResponse.json(
+        { error: "Invalid payload", details: result.error.format() },
+        { status: 400 },
+      );
     }
 
     const { title, content } = result.data;
@@ -119,7 +140,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         action: "UPDATE_DOCUMENT",
         details: JSON.stringify({
           documentId: id,
-          updatedFields: { title: title !== undefined, content: content !== undefined },
+          updatedFields: {
+            title: title !== undefined,
+            content: content !== undefined,
+          },
         }),
         ipAddress: ip,
       },
@@ -132,7 +156,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     });
   } catch (error) {
     console.error(`PATCH /api/documents/${id} error:`, error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 },
+    );
   }
 }
 
@@ -140,7 +167,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
  * DELETE /api/documents/[id]
  * Deletes a document, requiring OWNER permission.
  */
-export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
   const { id } = await params;
   const ip = req.headers.get("x-forwarded-for") || "127.0.0.1";
   const rateLimit = rateLimitCheck(ip);
@@ -156,7 +186,10 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   try {
     const isAuthorized = await checkPermission(id, session.user.id, "DELETE");
     if (!isAuthorized) {
-      return NextResponse.json({ error: "Forbidden: Only owners can delete documents" }, { status: 403 });
+      return NextResponse.json(
+        { error: "Forbidden: Only owners can delete documents" },
+        { status: 403 },
+      );
     }
 
     await prisma.document.delete({
@@ -175,6 +208,9 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     return NextResponse.json({ message: "Document successfully deleted" });
   } catch (error) {
     console.error(`DELETE /api/documents/${id} error:`, error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 },
+    );
   }
 }
