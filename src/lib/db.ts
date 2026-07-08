@@ -7,6 +7,7 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
+// update
 const connectionString = process.env.DATABASE_URL ?? "postgresql://postgres:postgres@localhost:5432/document_editor";
 const pool = new Pool({ connectionString });
 const adapter = new PrismaPg(pool);
