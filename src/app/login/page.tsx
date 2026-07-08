@@ -59,8 +59,11 @@ export default function LoginPage() {
       addToast("success", "Successfully authenticated");
       router.push("/dashboard");
       router.refresh();
-    } catch (err: any) {
-      addToast("error", err.message || "An error occurred during authentication");
+    } catch (err) {
+      addToast(
+        "error",
+        err.message || "An error occurred during authentication",
+      );
       setLoading(false);
     }
   };
@@ -69,7 +72,7 @@ export default function LoginPage() {
     try {
       await signIn(provider, { callbackUrl: "/dashboard" });
     } catch (err) {
-      addToast("error", `Failed to sign in with ${provider}`);
+      addToast("error", `Failed to sign in with ${provider} ${err.message}`);
     }
   };
 
@@ -77,14 +80,16 @@ export default function LoginPage() {
     <div className="flex min-h-screen flex-col items-center justify-center bg-slate-950 px-4 py-12 sm:px-6 lg:px-8">
       {/* Glow Backdrop */}
       <div className="absolute top-1/4 left-1/2 -z-10 h-[300px] w-[300px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-indigo-500/10 blur-[120px]" />
-      
+
       <div className="w-full max-w-md space-y-8 bg-slate-900/40 p-8 rounded-2xl border border-slate-800/80 backdrop-blur-xl shadow-2xl">
         <div className="text-center">
           <h2 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
             {isRegister ? "Create an account" : "Welcome back"}
           </h2>
           <p className="mt-2 text-sm text-slate-400">
-            {isRegister ? "Sign up to begin editing offline-first" : "Sign in to access your dashboard"}
+            {isRegister
+              ? "Sign up to begin editing offline-first"
+              : "Sign in to access your dashboard"}
           </p>
         </div>
 
@@ -140,7 +145,11 @@ export default function LoginPage() {
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-500 hover:text-slate-300"
               >
-                {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                {showPassword ? (
+                  <EyeOff className="h-5 w-5" />
+                ) : (
+                  <Eye className="h-5 w-5" />
+                )}
               </button>
             </div>
           </div>
@@ -164,11 +173,16 @@ export default function LoginPage() {
 
         {/* OAuth Separator */}
         <div className="relative my-6">
-          <div className="absolute inset-0 flex items-center" aria-hidden="true">
+          <div
+            className="absolute inset-0 flex items-center"
+            aria-hidden="true"
+          >
             <div className="w-full border-t border-slate-800" />
           </div>
           <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-slate-950 px-2 text-slate-500">Or continue with</span>
+            <span className="bg-slate-950 px-2 text-slate-500">
+              Or continue with
+            </span>
           </div>
         </div>
 
@@ -204,7 +218,12 @@ export default function LoginPage() {
             disabled={loading}
             className="flex items-center justify-center gap-2 rounded-lg border border-slate-800 bg-slate-950 py-2.5 text-sm font-medium text-slate-300 hover:bg-slate-900 transition-colors duration-150 cursor-pointer"
           >
-            <svg className="h-4 w-4 fill-current text-white" viewBox="0 0 24 24" width="24" height="24">
+            <svg
+              className="h-4 w-4 fill-current text-white"
+              viewBox="0 0 24 24"
+              width="24"
+              height="24"
+            >
               <path d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.462-1.11-1.462-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.579.688.481C19.137 20.164 22 16.418 22 12c0-5.523-4.477-10-10-10z" />
             </svg>
             GitHub
@@ -218,7 +237,9 @@ export default function LoginPage() {
             disabled={loading}
             className="text-sm font-medium text-indigo-400 hover:text-indigo-300 transition-colors duration-150 focus:outline-none"
           >
-            {isRegister ? "Already have an account? Sign in" : "Don't have an account? Sign up"}
+            {isRegister
+              ? "Already have an account? Sign in"
+              : "Don't have an account? Sign up"}
           </button>
         </div>
       </div>

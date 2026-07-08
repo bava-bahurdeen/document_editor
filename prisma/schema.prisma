@@ -1,21 +1,9 @@
-datasource db {
-  provider = "postgresql"
-}
-
 generator client {
   provider = "prisma-client-js"
 }
 
-enum Role {
-  OWNER
-  EDITOR
-  VIEWER
-}
-
-enum OperationType {
-  INSERT
-  DELETE
-  UPDATE_TITLE
+datasource db {
+  provider  = "postgresql"
 }
 
 model User {
@@ -24,15 +12,15 @@ model User {
   email         String?              @unique
   emailVerified DateTime?
   image         String?
-  password      String?              // Nullable since OAuth users don't need a password
-  accounts      Account[]
-  sessions      Session[]
-  permissions   DocumentPermission[]
-  operations    Operation[]
-  snapshots     Snapshot[]
-  auditLogs     AuditLog[]
+  password      String?
   createdAt     DateTime             @default(now())
   updatedAt     DateTime             @updatedAt
+  accounts      Account[]
+  auditLogs     AuditLog[]
+  permissions   DocumentPermission[]
+  operations    Operation[]
+  sessions      Session[]
+  snapshots     Snapshot[]
 
   @@index([email])
 }
@@ -43,15 +31,14 @@ model Account {
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
+  refresh_token     String?
+  access_token      String?
   expires_at        Int?
   token_type        String?
   scope             String?
-  id_token          String? @db.Text
+  id_token          String?
   session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
   @@index([userId])
@@ -78,7 +65,7 @@ model VerificationToken {
 model Document {
   id          String               @id @default(cuid())
   title       String
-  content     String               @db.Text // Contains latest serialized document state
+  content     String
   ownerId     String
   createdAt   DateTime             @default(now())
   updatedAt   DateTime             @updatedAt
@@ -93,12 +80,11 @@ model DocumentPermission {
   id         String   @id @default(cuid())
   documentId String
   userId     String
-  role       String
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
-
-  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role       String
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([documentId, userId])
   @@index([userId])
@@ -106,17 +92,16 @@ model DocumentPermission {
 }
 
 model Operation {
-  id         String        @id // Client-generated unique string: "clientId:sequence"
+  id         String        @id
   documentId String
   userId     String
   type       OperationType
-  position   String        // Fractional indexing position coordinate
-  value      String        @db.Text // Content character or title text
-  sequence   BigInt        @unique @default(autoincrement()) // Global auto-increment sync cursor
+  position   String
+  value      String
+  sequence   BigInt        @unique @default(autoincrement())
   createdAt  DateTime      @default(now())
-
-  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document   Document      @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([documentId, sequence])
   @@index([documentId, position])
@@ -126,15 +111,14 @@ model Operation {
 model Snapshot {
   id            String   @id @default(cuid())
   documentId    String
-  userId        String   // User who triggered/created the snapshot
-  content       String   @db.Text // Complete document JSON at snapshot point
-  sequence      BigInt   // The Operation sequence up to which this snapshot aggregates
+  userId        String
+  content       String
+  sequence      BigInt
   versionNumber Int
   isManual      Boolean  @default(false)
   createdAt     DateTime @default(now())
-
-  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document      Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([documentId, versionNumber])
   @@index([documentId, createdAt])
@@ -143,14 +127,25 @@ model Snapshot {
 
 model AuditLog {
   id        String   @id @default(cuid())
-  userId    String?  // Nullable if user is deleted, keeping audit logs intact
-  action    String   // e.g., "CREATE_DOCUMENT", "DELETE_DOCUMENT", "CHANGE_PERMISSION"
-  details   String   @db.Text // JSON string containing context metadata
+  userId    String?
+  action    String
+  details   String
   ipAddress String?
   createdAt DateTime @default(now())
-
-  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  user      User?    @relation(fields: [userId], references: [id])
 
   @@index([userId, createdAt])
   @@index([createdAt])
+}
+
+enum Role {
+  OWNER
+  EDITOR
+  VIEWER
+}
+
+enum OperationType {
+  INSERT
+  DELETE
+  UPDATE_TITLE
 }
