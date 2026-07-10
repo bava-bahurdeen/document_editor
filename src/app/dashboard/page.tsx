@@ -1,5 +1,4 @@
 import { auth } from "@/lib/auth";
-import { redirect } from "next/navigation";
 import DashboardContent from "@/components/dashboard/DashboardContent";
 
 export const metadata = {
@@ -15,9 +14,9 @@ export default async function DashboardPage() {
   const session = await auth();
 
   // Redirect to login if user is not authenticated
-  if (!session?.user) {
-    redirect("/login");
-  }
+  // if (!session?.user) {
+  //   redirect("/login");
+  // }
 
   // Map session user info safely
   const user = {
