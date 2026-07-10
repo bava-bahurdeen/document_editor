@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { getCurrentUserId } from "@/lib/get-current-user";
 import { prisma } from "@/lib/db";
 import { rateLimitCheck } from "@/lib/rate-limit";
 import { checkPermission } from "@/lib/authorization";
@@ -17,14 +17,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
 
-  const session = await auth();
-  if (!session?.user?.id) {
+  const userId = await getCurrentUserId();
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
     // 1. Authorization: Only OWNER can restore versions
-    const isOwner = await checkPermission(id, session.user.id, "RESTORE_VERSION");
+    const isOwner = await checkPermission(id, userId, "RESTORE_VERSION");
     if (!isOwner) {
       return NextResponse.json({ error: "Forbidden: Only owners can restore document snapshots" }, { status: 403 });
     }
@@ -62,7 +62,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     // 3. Write security audit log
     await prisma.auditLog.create({
       data: {
-        userId: session.user.id,
+        userId: userId,
         action: "RESTORE_SNAPSHOT",
         details: JSON.stringify({ documentId: id, snapshotId, versionNumber: restoredDoc.content }), // content is JSON
         ipAddress: ip,

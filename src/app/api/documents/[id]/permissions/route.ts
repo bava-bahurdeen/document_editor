@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { getCurrentUserId } from "@/lib/get-current-user";
 import { prisma } from "@/lib/db";
 import { rateLimitCheck } from "@/lib/rate-limit";
 import { checkPermission } from "@/lib/authorization";
@@ -17,14 +17,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
 
-  const session = await auth();
-  if (!session?.user?.id) {
+  const userId = await getCurrentUserId();
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
     // 1. Authorization: Only OWNER can manage permissions
-    const isOwner = await checkPermission(id, session.user.id, "MANAGE_PERMISSIONS");
+    const isOwner = await checkPermission(id, userId, "MANAGE_PERMISSIONS");
     if (!isOwner) {
       return NextResponse.json({ error: "Forbidden: Only owners can manage permissions" }, { status: 403 });
     }
@@ -47,7 +47,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     }
 
     // 3. Prevent modifying own ownership
-    if (targetUser.id === session.user.id && role !== "OWNER") {
+    if (targetUser.id === userId && role !== "OWNER") {
       // Ensure there is at least another owner or reject
       const ownersCount = await prisma.documentPermission.count({
         where: { documentId: id, role: "OWNER" },
@@ -76,7 +76,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     // 5. Audit Logging
     await prisma.auditLog.create({
       data: {
-        userId: session.user.id,
+        userId: userId,
         action: "SHARE_DOCUMENT",
         details: JSON.stringify({ documentId: id, granteeId: targetUser.id, role }),
         ipAddress: ip,
@@ -108,14 +108,14 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
 
-  const session = await auth();
-  if (!session?.user?.id) {
+  const userId = await getCurrentUserId();
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
     // 1. Authorization: Only OWNER can manage permissions
-    const isOwner = await checkPermission(id, session.user.id, "MANAGE_PERMISSIONS");
+    const isOwner = await checkPermission(id, userId, "MANAGE_PERMISSIONS");
     if (!isOwner) {
       return NextResponse.json({ error: "Forbidden: Only owners can manage permissions" }, { status: 403 });
     }
@@ -155,7 +155,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     // 4. Audit Logging
     await prisma.auditLog.create({
       data: {
-        userId: session.user.id,
+        userId: userId,
         action: "REVOKE_PERMISSION",
         details: JSON.stringify({ documentId: id, revokedUserId: targetUserId }),
         ipAddress: ip,

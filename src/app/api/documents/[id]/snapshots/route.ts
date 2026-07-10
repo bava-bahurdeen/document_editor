@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { getCurrentUserId } from "@/lib/get-current-user";
 import { prisma } from "@/lib/db";
 import { rateLimitCheck } from "@/lib/rate-limit";
 import { checkPermission } from "@/lib/authorization";
@@ -17,13 +17,13 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
 
-  const session = await auth();
-  if (!session?.user?.id) {
+  const userId = await getCurrentUserId();
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
-    const isAuthorized = await checkPermission(id, session.user.id, "VIEW_HISTORY");
+    const isAuthorized = await checkPermission(id, userId, "VIEW_HISTORY");
     if (!isAuthorized) {
       return NextResponse.json({ error: "Forbidden: View history permission required" }, { status: 403 });
     }
@@ -73,13 +73,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
 
-  const session = await auth();
-  if (!session?.user?.id) {
+  const userId = await getCurrentUserId();
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
-    const isAuthorized = await checkPermission(id, session.user.id, "CREATE_VERSION");
+    const isAuthorized = await checkPermission(id, userId, "CREATE_VERSION");
     if (!isAuthorized) {
       return NextResponse.json({ error: "Forbidden: Edit permission required to create snapshots" }, { status: 403 });
     }
@@ -136,7 +136,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const newSnapshot = await prisma.snapshot.create({
       data: {
         documentId: id,
-        userId: session.user.id,
+        userId: userId,
         content: document.content,
         sequence: lastSeq,
         versionNumber: snapshotCount + 1,
@@ -146,7 +146,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     await prisma.auditLog.create({
       data: {
-        userId: session.user.id,
+        userId: userId,
         action: "CREATE_SNAPSHOT",
         details: JSON.stringify({
           documentId: id,

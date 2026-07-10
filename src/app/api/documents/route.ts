@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { getCurrentUserId } from "@/lib/get-current-user";
 import { prisma } from "@/lib/db";
 import { rateLimitCheck } from "@/lib/rate-limit";
 import { createDocumentSchema } from "@/lib/validation";
@@ -17,8 +17,8 @@ export async function GET(req: NextRequest) {
   }
 
   // 2. Authentication Check
-  const session = await auth();
-  if (!session?.user?.id) {
+  const userId = await getCurrentUserId();
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -32,11 +32,11 @@ export async function GET(req: NextRequest) {
     const documents = await prisma.document.findMany({
       where: {
         OR: [
-          { ownerId: session.user.id },
+          { ownerId: userId },
           {
             permissions: {
               some: {
-                userId: session.user.id,
+                userId: userId,
               },
             },
           },
@@ -53,7 +53,7 @@ export async function GET(req: NextRequest) {
       take: limit,
       include: {
         permissions: {
-          where: { userId: session.user.id },
+          where: { userId: userId },
           select: { role: true },
         },
       },
@@ -62,11 +62,11 @@ export async function GET(req: NextRequest) {
     const total = await prisma.document.count({
       where: {
         OR: [
-          { ownerId: session.user.id },
+          { ownerId: userId },
           {
             permissions: {
               some: {
-                userId: session.user.id,
+                userId: userId,
               },
             },
           },
@@ -83,7 +83,7 @@ export async function GET(req: NextRequest) {
     // Map response and append calculated client-side role
     const formattedDocs = documents.map((doc) => {
       const explicitRole = doc.permissions[0]?.role;
-      const role = doc.ownerId === session.user.id ? "OWNER" : explicitRole || "VIEWER";
+      const role = doc.ownerId === userId ? "OWNER" : explicitRole || "VIEWER";
       return {
         id: doc.id,
         title: doc.title,
@@ -121,8 +121,8 @@ export async function POST(req: NextRequest) {
   }
 
   // 2. Authentication Check
-  const session = await auth();
-  if (!session?.user?.id) {
+  const userId = await getCurrentUserId();
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -141,14 +141,14 @@ export async function POST(req: NextRequest) {
         data: {
           title,
           content,
-          ownerId: session.user.id,
+          ownerId: userId,
         },
       });
 
       await tx.documentPermission.create({
         data: {
           documentId: doc.id,
-          userId: session.user.id,
+          userId: userId,
           role: "OWNER",
         },
       });
@@ -159,7 +159,7 @@ export async function POST(req: NextRequest) {
     // Write security audit log
     await prisma.auditLog.create({
       data: {
-        userId: session.user.id,
+        userId: userId,
         action: "CREATE_DOCUMENT",
         details: JSON.stringify({ documentId: newDoc.id, title: newDoc.title }),
         ipAddress: ip,
