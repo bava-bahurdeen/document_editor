@@ -2,12 +2,11 @@
 
 import React, { useState } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
 import { useNotificationStore } from "@/stores/use-notification-store";
 import { Lock, Mail, User, Eye, EyeOff, Loader2 } from "lucide-react";
 
 export default function LoginPage() {
-  const router = useRouter();
+  // const router = useRouter();
   const { addToast } = useNotificationStore();
 
   const [isRegister, setIsRegister] = useState(false);
@@ -57,8 +56,9 @@ export default function LoginPage() {
       }
 
       addToast("success", "Successfully authenticated");
-      router.push("/dashboard");
-      router.refresh();
+      // router.push("/dashboard");
+      window.open(`/dashboard`,"_self")
+      // router.refresh();
     } catch (err) {
       addToast(
         "error",
