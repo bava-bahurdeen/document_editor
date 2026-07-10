@@ -4,9 +4,10 @@ import React, { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useNotificationStore } from "@/stores/use-notification-store";
 import { Lock, Mail, User, Eye, EyeOff, Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
-  // const router = useRouter();
+  const router = useRouter();
   const { addToast } = useNotificationStore();
 
   const [isRegister, setIsRegister] = useState(false);
@@ -42,23 +43,23 @@ export default function LoginPage() {
         }
 
         addToast("success", "Account created successfully! Logging you in...");
+      } else {
+        const res = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data?.error || "Invalid email or password");
+        }
+
       }
-
-      // Login Phase
-      const loginResult = await signIn("credentials", {
-        email,
-        password,
-        redirect: false,
-      });
-
-      if (loginResult?.error) {
-        throw new Error("Invalid email or password");
-      }
-
       addToast("success", "Successfully authenticated");
-      // router.push("/dashboard");
-      window.open(`/dashboard`,"_self")
-      // router.refresh();
+      router.push("/dashboard");
+      router.refresh();
     } catch (err) {
       addToast(
         "error",
